@@ -1,0 +1,28 @@
+＃１０　bakeしてみよう！
+
+■login_historysテーブルの作成
+CREATE TABLE `login_historys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL COMMENT 'ユーザーID',
+  `login_time` timestamp NULL COMMENT 'ログイン日時',
+  `logout_time` timestamp NULL COMMENT 'ログアウト日時',
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '作成日',
+  `modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新日',
+  `created_user` varchar(45) DEFAULT NULL COMMENT '作成者',
+  `modified_user` varchar(45) DEFAULT NULL COMMENT '更新者',
+  PRIMARY KEY (`id`)
+  )
+
+■bakeする
+CakePHPプロジェクトのbinに移動します。
+> cd documents\cake-project\bin
+
+bakeの一覧を表示
+> cake bake
+
+usersテーブルのbake
+> cake bake all users
+
+login_historyテーブルのbake
+> cake bake all login_historys
+
