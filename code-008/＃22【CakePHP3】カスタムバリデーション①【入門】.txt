@@ -1,0 +1,38 @@
+■コールバック関数でのルール追加
+
+バリデーション
+$validator
+ ->scalar('tel')
+ ->allowEmpty('tel')
+ ->add('tel', 'tel_check_rule', [
+   'rule' => [$this, 'checkTel'],
+   'message' => '電話番号が正しくありません'
+   ]);
+
+
+コールバック関数
+public function checkTel($value) {
+ return (bool) preg_match('/^[0-9][0-9\-]+[0-9]$/', $value);
+}
+
+
+
+■debugの出し方
+
+ \Cake\Log\Log::debug($context);
+
+
+
+
+■クロージャーでのルール追加
+
+$validator
+ ->scalar('tel')
+ ->allowEmpty('tel')
+ ->add('tel', 'tel', [
+　 'rule' => function ($value) {
+　　　return (bool) preg_match('/^[0-9][0-9\-]+[0-9]$/', $value);
+   },
+   'message' => '電話番号が正しくありません'
+   ]);
+
