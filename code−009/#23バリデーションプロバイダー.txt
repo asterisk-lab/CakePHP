@@ -1,0 +1,15 @@
+＃２３バリデーションプロバイダー
+
+■プロバイダーの設定
+   $validator->setProvider('custom', 'App\Model\Validation\CustomValidation');
+
+
+■変更するvalidator
+$validator
+　->scalar('tel')
+　->allowEmpty('tel')
+　->add('tel', 'tel', [
+    'rule' => 'checkTel',
+    'provider' => 'custom',
+    'message' => '電話番号が正しくありません'
+  ]);
