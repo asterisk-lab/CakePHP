@@ -1,0 +1,6 @@
+＃２４デフォルトプロバイダー
+
+■デフォルトプロバイダーの設定
+use Cake\Validation\Validator;
+
+Validator::addDefaultProvider('custom', 'App\Model\Validation\CustomValidation');
