@@ -1,0 +1,38 @@
+＃25プラグインを使ったバリデーション
+
+
+■Localizedプラグインのインストール
+　Wndowsキー＋Rを押し、cmdと入力してEnterキーを押しコマンドプロンプトを開く。
+　CakePHPプロジェクトのルート（cake-project）に移動し次のコマンドを実行します。
+
+> cd documents\cake-project
+> composer require cakephp/localized:"3.*.*"
+
+
+■CakePHPで定義する
+ コマンドプロンプトでcakeのbinに移動して次のコマンドを実行。
+> cd bin
+> cake plugin load Cake/Localized
+
+
+■UsersTable.phpをLocalizedプラグインのバリデーションに変更
+use Cake\Localized\Validation\JpValidation;
+
+$validator->setProvider('jp', JpValidation::class);
+
+$validator
+　->scalar('tel')
+  ->allowEmpty('tel')
+  ->add('tel', 'tel', [
+   'rule' => 'phone',
+   'provider' => 'jp',
+  ]);
+
+
+■config/bootstrap.php
+Useを追加する。
+use Cake\Localized\Validation\JpValidation;
+
+Validator::addDefaultProvider('jp', JpValidation::class);
+
+
