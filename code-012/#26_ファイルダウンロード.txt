@@ -1,0 +1,35 @@
+#26 ファイルダウンロード
+
+・CsvViewプラグインのインストール
+cd documents\cake-project
+
+composer require friendsofcake/cakephp-csvview:"3.*"
+
+
+・テンプレートにダウンロードリンクを追加
+ <h3 class="large-10 medium-10 columns"><?= __('Login Historys') ?></h3>
+ <span class="large-2 medium-2 columns" style="border:thick double #258D97;text-align:center;">
+     <?= $this->Html->link(__('Download'), ['action' => 'download']) ?>
+ </span>
+
+
+・downloadメソッドの追加
+
+public function download()
+{
+    $_body = $this->LoginHistorys->find()->all();
+
+    $_serialize = '_body';
+    $_header = ['id', 'user_id', 'login_time', 'logout_time', 'created', 'modified', 'created_user', 'modified_user'];
+    $_footer = ['これはフッターです'];
+    $_csvEncoding = 'CP932';
+    $_newline = "\r\n";
+    $_eol = "\r\n";
+
+    $this->response = $this->response
+        ->withType('csv')
+        ->withDownload('login_history.csv');
+
+    $this->viewBuilder()->setClassName('CsvView.Csv');
+    $this->set(compact('_body', '_serialize', '_header', '_footer', '_csvEncoding', '_newline', '_eol'));
+}
