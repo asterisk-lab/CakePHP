@@ -1,0 +1,24 @@
+#28　ソフトデリート（論理削除）
+
+・プラグインのインストール
+composer require pgbi/cakephp3-soft-delete "~1.0"
+
+bin\cake plugin load SoftDelete
+
+・テーブルに削除フラグを追加
+ALTER TABLE `users` 
+ ADD `deleted` DATETIME NULL DEFAULT NULL COMMENT '削除フラグ' AFTER `tel`;
+
+
+
+・Model/Table/UsersTable.phpに追加
+
+use SoftDelete\Model\Table\SoftDeleteTrait;
+
+
+class UsersTable extends Table
+{
+　　↓UsersTableクラスのクラス定義の中に記述↓
+
+    use SoftDeleteTrait;
+    protected $softDeleteField = 'deleted';
