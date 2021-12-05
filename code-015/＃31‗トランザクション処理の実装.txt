@@ -58,7 +58,7 @@ CREATE TABLE `user_change_logs` (
             if ($this->Users->save($user)) {
                 $this->Flash->success(__('ユーザーを保存しました。'));
             } else {
-                $this->Flash->error(__('Tユーザーが保存できませんでした。'));
+                $this->Flash->error(__('ユーザーが保存できませんでした。'));
                 $result = false;
             }
 
