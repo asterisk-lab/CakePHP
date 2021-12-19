@@ -1,0 +1,69 @@
+  
+＃３３　例外処理って何？
+
+■例外処理
+
+  use Exception;
+
+
+  /**
+       * クロージャーを使ったトランザクション処理（例外バージョン）
+       */
+    public function editInClosure($id = null)
+    {
+        $user = $this->Users->get($id, [
+            'contain' => [],
+        ]);
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            //saveを行う処理をクロージャにいれる
+            $saveProc = function () use ($user) {
+                $saveResult = true;
+                // ユーザー変更履歴を生成する
+                $this->loadModel('UserChangeLogs');
+                $userChangeLog = $this->UserChangeLogs->newEntity();
+                $userChangeLog->action = 'edit';
+                $userChangeLog->before_value = serialize($user);
+                $userChangeLog->modified_user = $this->Auth->user('account');
+                $userChangeLog->created_user = $this->Auth->user('account');
+
+                $user = $this->Users->patchEntity($user, $this->request->getData());
+                $userChangeLog->after_value = serialize($user);
+
+                // ユーザーデータの保存
+                if ($this->Users->save($user)) {
+                    $this->Flash->success(__('ユーザーを保存しました。'));
+                } else {
+                    throw new Exception('ユーザーが保存できませんでした。');
+                }
+
+                // ユーザー変更ログの保存
+                if ($this->UserChangeLogs->save($userChangeLog)) {
+                    $this->Flash->success(__('ユーザー変更ログを保存しました。'));
+                } else {
+                    throw new Exception('ユーザー変更ログが保存できませんでした。');
+                }
+
+                return $saveResult;
+            };
+
+            //DBのコネクションを取得し、データ保存処理を実行
+            $conn = $this->Users->getConnection();
+            try {
+                $result = $conn->transactional($saveProc);
+            }
+            catch (Exception $e) {
+                $this->Flash->error(__('例外が発生したため、'.$e->getMessage()));
+                $this->set(compact('user'));
+            return;
+            }
+
+            // エラーが無ければ一覧画面に遷移する
+            if ($result) {
+                return $this->redirect(['action' => 'index']);
+            } else {
+                $this->Flash->error(__('ユーザーとユーザー変更ログの両方の保存が成功しなかったためロールバックしました。'));
+            }
+        }
+        $this->set(compact('user'));
+    }
