@@ -1,0 +1,28 @@
+  
+＃３４ルーティングを使ってみよう！
+
+■Cookbookのルーティングのページ
+https://book.cakephp.org/3/ja/development/routing.html
+
+
+■ルーティング設定
+ルーティングを設定する場所→/config/routes.php
+
+$routes->connect('/userlist', ['controller' => 'Users', 'action' => 'index']);
+
+
+■scopeメソッドを使ったルーティング
+    $routes->scope('/member', function ($routes) {
+        $routes->connect('/info/:id', ['controller' => 'Users', 'action' => 'view'])
+            ->setPass(['id']);
+    });
+
+■scopeメソッドをネストしたルーティング
+  　$routes->scope('/member', function ($routes) {
+        $routes->scope('/vip', function ($routes) {
+            $routes->connect('/info/:id', ['controller' => 'Users', 'action' => 'view'])
+                ->setPatterns(['id' => '\d+'])
+                ->setPass(['id']);
+        });
+    });
+
