@@ -1,0 +1,28 @@
+#35 ログ出力してみよう！
+
+■一番簡単なログの出力方法
+$this->log('これはログファイルに出力されるメッセージです。');
+
+
+■debuglogにメッセージを出力したい場合
+$this->log('これはログファイルに出力されるメッセージです。', ‘debug’);
+
+
+■staticメソッドを使って出力したい場合
+
+debuglogに出力
+\Cake\Log\Log::debug('Logクラスのdebugメソッドを使用して出力します');
+
+
+errorlogに出力
+\Cake\Log\Log::error('Logクラスのerrorメソッドを使用して出力します');
+
+
+■ログ出力を何度も行う場合
+
+use Cake\Log\Log;
+
+// useしておけばログ出力するところはLogから記述できます
+Log::debug('useしたログ出力');
+
+
