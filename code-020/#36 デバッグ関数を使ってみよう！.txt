@@ -1,0 +1,8 @@
+#36 デバッグ関数を使ってみよう！
+
+■debug関数を使って画面にデバッグ表示させる
+　<?php debug($user); ?>
+
+■debug.logに出力する
+　<?php $this->log($user, 'debug'); ?>　
+
