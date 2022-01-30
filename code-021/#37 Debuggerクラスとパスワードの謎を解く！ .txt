@@ -1,0 +1,30 @@
+#37 Debuggerクラスとパスワードの謎を解く！
+
+■Debuggerのdumpメソッドの記述方法
+　useする場合
+　　use Cake\Error\Debugger;
+
+　　Debugger::dump($user);
+
+
+　useしない場合
+　　\Cake\Error\Debugger::dump($user);
+
+
+
+■logメソッドの出力方法
+　 \Cake\Error\Debugger::log($user);
+
+■config/bootstrap.php
+　use Cake\Error\Debugger;
+
+　Debugger::setOutputMask([
+  　  'password' => '🌴🌴🌴(=ФωФ=)🌴🌴🌴',
+　]);
+
+
+■Debuggerについてもっと知りたい場合→Cookbookのこちらのページを参照
+https://book.cakephp.org/3/ja/development/debugging.html#namespace-Cake\Error
+
+
+
