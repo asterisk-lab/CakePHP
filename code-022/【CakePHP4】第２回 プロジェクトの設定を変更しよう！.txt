@@ -1,0 +1,22 @@
+【CakePHP4】第２回 プロジェクトの設定を変更しよう！
+
+■Datasourcesに追加
+'encoding' => 'utf8mb4',
+'timezone' => '+09:00',
+
+■Appを修正
+'defaultLocale' => env('APP_DEFAULT_LOCALE', 'ja_JP'),
+'defaultTimezone' => env('APP_DEFAULT_TIMEZONE', 'Asia/Tokyo'),
+
+■Localizedプラグインインストール
+前回作成したプロジェクトのルートに移動しコマンドを実行。
+> cd documents\src\c4-project
+composer require cakephp/localized
+
+■4.0 移行ガイド
+https://book.cakephp.org/4/ja/appendices/4-0-migration-guide.html
+
+■4.0 アップグレードガイド
+https://book.cakephp.org/4/ja/appendices/4-0-upgrade-guide.html
+
+
