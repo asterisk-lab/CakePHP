@@ -1,0 +1,40 @@
+CakePHP4#04‗エラーを修正して画面を表示しよう！
+
+■src\Application.php下記の記述を削除。
+
+  $this->addPlugin('SoftDelete');
+  $this->addPlugin('Cake/Localized');
+
+
+■config\paths.php
+　「CACHE」定数の下に「RESOURCE」の宣言を追加。
+
+/*
+ * Path to the resources directory.
+ */
+define('RESOURCES', ROOT . DS . 'resources' . DS);
+
+
+
+■src\View\AppViewクラス
+　「initialize」メソッドに戻り値を追加。
+
+public function initialize(): void
+
+
+
+■\templates\layout\default.php
+　48行目を次のように変更。
+
+  if($this->request->getSession()->read('Auth.User')) : ?>
+
+
+■Users/index.php
+　配列ではなく、文字列を指定。（ページネーションを使用しているところ全部）
+<p><?= $this->Paginator->counter(__('Page {{page}} of {{pages}}, showing {{current}} record(s) out of {{count}} total')) ?></p>
+
+
+■src\Controller\UsersController.php
+　addメソッドを次のように変更。
+
+　$user = $this->Users->newEmptyEntity();
