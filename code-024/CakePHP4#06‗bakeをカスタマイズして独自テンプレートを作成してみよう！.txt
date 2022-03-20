@@ -1,0 +1,19 @@
+CakePHP4#06‗bakeをカスタマイズして独自テンプレートを作成してみよう！
+
+■bakeコマンド
+
+  cd documents\src\c4-project
+
+　bin\cake bake all users
+
+
+■templates\plugin\Bake\Template\index.twigの52行目
+
+　{% if columnData.type in ['integer', 'float', 'decimal', 'biginteger', 'smallinteger', 'tinyinteger'] %}
+                    <td><?= $this->Number->format(${{ singularVar }}->{{ field }}) ?></td>
+　{% elseif columnData.type in ['timestamp']%}
+                    <td><?= h(date('Y年m月d日 H時i分s秒', strtotime(${{ singularVar }}->{{ field }}))) ?></td>
+　{% else %}
+                    <td><?= h(${{ singularVar }}->{{ field }}) ?></td>
+　{% endif %}
+
