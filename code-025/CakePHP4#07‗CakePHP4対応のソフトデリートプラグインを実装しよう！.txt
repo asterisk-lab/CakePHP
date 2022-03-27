@@ -1,0 +1,21 @@
+CakePHP4　#07‗CakePHP4対応のソフトデリートプラグインを実装しよう！
+
+■ソフトデリート導入コマンド
+
+  cd documents\src\プロジェクト名
+
+　composer require salines/cakephp4-soft-delete "~1.0"
+
+
+■削除フラグカラムの用意
+
+　ALTER TABLE `users` 
+　ADD `deleted` DATETIME NULL DEFAULT NULL COMMENT '削除フラグ' AFTER `tel`;
+
+
+■ Model/Table/UsersTable.phpにuseを追加
+ 
+ use SoftDelete\Model\Table\SoftDeleteTrait;
+
+ use SoftDeleteTrait;
+ protected $softDeleteField = 'deleted';
