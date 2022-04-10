@@ -1,0 +1,46 @@
+CakePHP4#09‗プラグイン専用の雛形（bakeテンプレート）を作成しよう！
+
+■\plugins\Admin\templates\bake\」配下に作成
+　
+　下記の２つをコピーする
+  　コントローラー
+　　　c4-project\vendor\cakephp\bake\templates\bake\Controller
+
+　　テンプレート
+　　　c4-project\vendor\cakephp\bake\templates\bake\Template
+
+
+
+■コピーしたcontrollerのcontroller.twig
+　
+　45行目を次のように変更
+　
+　class {{ name }}Controller extends AdminController
+
+
+■AdminController.php
+<?php
+declare(strict_types=1);
+
+namespace Admin\Controller;
+
+class AdminController extends AppController
+{
+}
+
+
+■コピーしたtemplateのindex.twig
+　26行目を次のように変更
+　
+　<h3>●<?= __('{{ pluralHumanName }}') ?>●</h3>
+
+
+■bakeの実行
+
+　cd documents\src\c4-project
+
+　bin\cake bake all --theme Admin --plugin Admin Users
+
+
+■URL
+http://localhost/admin/users
