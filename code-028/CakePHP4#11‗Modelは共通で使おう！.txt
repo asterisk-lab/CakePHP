@@ -1,0 +1,94 @@
+CakePHP4#11‗Modelは共通で使おう！
+
+■共通のModelを作成する場合
+　（プラグインを指定せずに通常のbakeで作成）
+　
+　cd documents\src\自身のプロジェクト名
+　bin\cake bake model Users
+
+※既にプラグイン用にModelをbake済であれば削除する
+
+
+■自身のプロジェクト名/plugins/Admin/templates/bake/Controller/controller.twig
+　下記をまるっとコピーして、既存のcontroller.twigの中身全てと置き換える
+
+{#
+/**
+ * Controller bake template file
+ *
+ * Allows templating of Controllers generated from bake.
+ *
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ *
+ * Licensed under The MIT License
+ * For full copyright and license information, please see the LICENSE.txt
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
+ * @since         2.0.0
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ */
+#}
+{% set modelPath='App\\Model' %}
+<?php
+declare(strict_types=1);
+
+namespace {{ namespace }}\Controller{{ prefix }};
+
+{% if plugin or prefix %}
+use {{ baseNamespace }}\Controller\AppController;
+
+{% endif %}
+/**
+ * {{ name }} Controller
+ *
+ * @property \{{ modelPath }}\Table\{{ name }}Table ${{ name }}
+
+{%- for component in components %}
+{% set classInfo = Bake.classInfo(component, 'Controller/Component', 'Component') %}
+ * @property {{ classInfo.fqn }} ${{ classInfo.name }}
+{% endfor %}
+
+{%- if 'index' in actions %}
+ * @method \{{ modelPath }}\Entity\{{ entityClassName }}[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
+{% endif %}
+ */
+class {{ name }}Controller extends AdminController
+{
+    /**
+     * Initialize controller
+     *
+     * @return void
+     */
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->{{ name }} = $this->fetchTable('{{ name }}');
+{% if components %}
+{% for component in components %}
+        $this->loadComponent('{{ component }}');
+{% endfor %}
+{% endif %}
+{% if helpers %}
+        $this->viewBuilder()->setHelpers({{ Bake.exportArray(helpers)|raw }});
+{% endif %}
+    }
+{% if actions|length %}{{ "\n" }}{% endif %}
+{%- for action in actions %}
+{% if loop.index > 1 %}{{ "\n" }}{% endif %}
+    {{- element('Bake.Controller/' ~ action) -}}
+{% endfor %}
+}
+
+
+■plugins/Admin/src/Controller/UsersController.php
+　indexメソッドにdebugを追加する。
+
+　debug($this->Users);
+  debug($this->Users->find()->all());
+
+
+■URL
+http://localhost/admin/users
