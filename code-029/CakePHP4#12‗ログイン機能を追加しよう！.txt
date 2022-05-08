@@ -1,0 +1,156 @@
+CakePHP4#12‗ログイン機能を追加しよう！
+
+■Cookbookのチュートリアル
+　https://book.cakephp.org/4/ja/tutorials-and-examples/cms/authentication.html
+　
+
+
+■認証プラグインのインストール
+
+cd documents\src\自身のプロジェクト名
+
+composer require "cakephp/authentication:^2.0"
+
+
+
+■パスワードを暗号化して保存
+
+// このuseを追加する
+use Authentication\PasswordHasher\DefaultPasswordHasher;
+
+
+// このメソッドを追加する
+protected function _setPassword(string $password) : ?string
+{
+　if (strlen($password) > 0) {
+  　return (new DefaultPasswordHasher())->hash($password);
+  }
+}
+
+
+■src/Application.php にログインの追加
+
+①useを追加
+
+use Authentication\AuthenticationService;
+use Authentication\AuthenticationServiceInterface;
+use Authentication\AuthenticationServiceProviderInterface;
+use Authentication\Middleware\AuthenticationMiddleware;
+use Cake\Routing\Router;
+use Psr\Http\Message\ServerRequestInterface;
+
+
+② Applicationクラスに認証インタフェースを実装
+
+ class Application extends BaseApplication  implements AuthenticationServiceProviderInterface
+{
+
+※implements以降をApplicationクラスに追加する。
+
+
+③middlewareメソッドの既存コードに次のコードを追加
+
+// 認証機能
+->add(new RoutingMiddleware($this))
+// RoutingMiddleware の後に認証を追加
+ ->add(new AuthenticationMiddleware($this));
+
+
+④getAuthenticationServiceメソッドを追加
+
+  public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
+  {
+        // プラグイン名を取得する
+        $pluginName = $request->getParam('plugin');
+        $plugin = null !== $pluginName ? strtolower($pluginName).'/' : '';
+
+        $authenticationService = new AuthenticationService([
+            'unauthenticatedRedirect' => Router::url($plugin.'users/login'),
+        ]);
+
+        // identifiers account と password のフィールドを確認します
+        $authenticationService->loadIdentifier('Authentication.Password', [
+            'fields' => [
+                'username' => 'account',
+                'password' => 'password',
+            ]
+        ]);
+
+        // authenticatorsをロードしたら, 最初にセッションが必要です
+        $authenticationService->loadAuthenticator('Authentication.Session');
+        // 入力した account と password をチェックする為のフォームデータを設定します
+        $authenticationService->loadAuthenticator('Authentication.Form', [
+            'fields' => [
+                'username' => 'account',
+                'password' => 'password',
+            ],
+            'loginUrl' => Router::url($plugin.'users/login'),
+        ]);
+
+        return $authenticationService;
+  }
+
+
+■AppControllerコードを追加
+
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->loadComponent('RequestHandler');
+        $this->loadComponent('Flash');
+    
+        // 認証結果を確認し、サイトのロックを行うために次の行を追加します
+        $this->loadComponent('Authentication.Authentication');
+    }
+
+
+■UsersControllerコードを追加
+
+    public function beforeFilter(\Cake\Event\EventInterface $event)
+    {
+        parent::beforeFilter($event);
+        // 認証を必要としないログインアクションを構成し、
+        // 無限リダイレクトループの問題を防ぎます
+        $this->Authentication->addUnauthenticatedActions(['login', 'add']);
+    }
+
+    public function login()
+    {
+        $this->request->allowMethod(['get', 'post']);
+        $result = $this->Authentication->getResult();
+        // POST, GETを問わず、ユーザーがログインしている場合はリダイレクトします
+        if ($result->isValid()) {
+            // ログインに成功した場合、ユーザー一覧にリダイレクトします
+            $redirect = $this->request->getQuery('redirect', [
+                'controller' => 'Users',
+                'action' => 'index',
+            ]);
+
+            return $this->redirect($redirect);
+        }
+        // ユーザーがsubmit後、認証失敗した場合は、エラーを表示します
+        if ($this->request->is('post') && !$result->isValid()) {
+            $this->Flash->error(__('Invalid username or password'));
+        }
+    }
+
+■ログイン用のテンプレートを「plugins/Admin/templates/Users」フォルダに追加。
+　ファイル名は「login.php」にして下記のコードを記述する。
+
+　<div class="users form">
+    <?= $this->Flash->render() ?>
+    <h3>Login</h3>
+    <?= $this->Form->create() ?>
+    <fieldset>
+        <legend><?= __('Please enter your username and password') ?></legend>
+        <?= $this->Form->control('account', ['required' => true]) ?>
+        <?= $this->Form->control('password', ['required' => true]) ?>
+    </fieldset>
+    <?= $this->Form->submit(__('Login')); ?>
+    <?= $this->Form->end() ?>
+
+    <?= $this->Html->link("Add User", ['action' => 'add']) ?>
+</div>
+
+■URL
+http://localhost/admin/users
