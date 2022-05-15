@@ -1,0 +1,44 @@
+CakePHP4#12‗ログイン機能を追加しよう！
+
+■UsersControllerにlogoutメソッドを追加
+　    public function logout()
+    {
+        $result = $this->Authentication->getResult();
+        // POST, GETを問わず、ユーザーがログインしている場合はリダイレクトします
+        if ($result->isValid()) {
+            $this->Authentication->logout();
+            return $this->redirect(['controller' => 'Users', 'action' => 'login']);
+        }
+    }
+
+
+■layoutフォルダを作成
+plugins/Admin/templates」に「layout」フォルダを作成する。
+作成した「layout」フォルダに、「templates/layout/default.php」をコピーする。
+
+
+■コピーした「default.php」の43行目付近のdivブロックを次のように変更
+
+// <div class="top-nav-links">　に下記のコードを追加する。
+　<?php if($this->request->getSession()->read('Auth')) : ?>
+  <?= $this->Html->link(__('Logout'), ['controller' => 'Users', 'action' => 'logout']) ?>
+  <?php endif; ?>
+
+※「Documentation」と「API」のリンクはここでは不要なので削除する。
+
+
+
+■login.phpの「Add User」リンクを削除
+
+  <?= $this->Html->link("Add User", ['action' => 'add']) ?>
+　※↑このコードを削除する
+
+■UsersControllerのbeforeFilterメソッドで
+認証無しでユーザー登録画面へのアクセスを許可していたところを削除
+
+        $this->Authentication->addUnauthenticatedActions(['login', 'add']);
+　　　　　※↑ , 'add'　を削除する。
+
+
+■URL
+http://localhost/admin/users
