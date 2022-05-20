@@ -1,0 +1,43 @@
+CakePHP4#07‗uniqueでsoftdeleteしたデータを除外しない方法
+
+■UsersTableを変更する（soft deleteしたデータをuniqueで除外したくないテーブルに追加する）
+
+
+①initializeの下に下記のコードを追加する
+
+　  public $uniqueCheck = false;
+
+    public function validateUniqueWithUsers($value, array $options, ?array $context = null): bool
+    {
+        $this->uniqueCheck = true;
+        return parent::validateUnique($value, $options, $context);
+    }
+
+    public function exists($conditions): bool
+    {
+        if ($this->uniqueCheck) {
+            return (bool)count(
+                $this->find('all', ['withDeleted'])
+                ->select(['existing' => 1])
+                ->where($conditions)
+                ->limit(1)
+                ->disableHydration()
+                ->toArray()
+            );
+        }
+        else {
+            return parent::exists($conditions); 
+        }
+    }
+
+
+②validationDefaultの中の$validator（account）の'rule' の中身を変更する
+
+
+   $validator
+       ->scalar('account')
+       ->maxLength('account', 20)
+       ->requirePresence('account', 'create')
+       ->notEmptyString('account')
+       ->add('account', 'unique', ['rule' => 'validateUniqueWithUsers', 'provider' => 'table']);
+
