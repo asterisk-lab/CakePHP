@@ -41,3 +41,4 @@ CakePHP4#07‗uniqueでsoftdeleteしたデータを除外しない方法
        ->notEmptyString('account')
        ->add('account', 'unique', ['rule' => 'validateUniqueWithUsers', 'provider' => 'table']);
 
+※　$validator別に'rule' => 'validateUniqueWithUsers'を変えれば、カラムによって対応を変えることも可能です。
