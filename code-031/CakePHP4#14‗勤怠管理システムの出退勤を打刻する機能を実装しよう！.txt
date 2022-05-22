@@ -1,0 +1,150 @@
+CakePHP4#14‗勤怠管理システムの出退勤を打刻する機能を実装しよう！
+
+■勤務表テーブル（rosters)
+
+  CREATE TABLE `rosters` (
+  `id` int(11) UNSIGNED NOT NULL,
+  `users_id` int(11) UNSIGNED NOT NULL COMMENT '社員ID',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '出勤時間',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '退勤時間',
+  `status` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '状態',
+  `reason` varchar(255) NOT NULL DEFAULT '' COMMENT '事由',
+  `deleted` datetime DEFAULT NULL COMMENT '削除フラグ',
+  `created` timestamp NULL DEFAULT current_timestamp() COMMENT '作成日',
+  `modified` timestamp NULL DEFAULT current_timestamp() COMMENT '更新日',
+  `created_user` varchar(45) DEFAULT NULL COMMENT '作成者',
+  `modified_user` varchar(45) DEFAULT NULL COMMENT '更新者'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+ALTER TABLE `rosters`
+  ADD PRIMARY KEY (`id`);
+ALTER TABLE `rosters`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
+
+■勤務表テーブルのCRUDをbakeする
+
+cd documents\src\自身のプロジェクト
+bin\cake bake all rosters
+
+
+■src\Controller\RostersController.phpに追加
+
+①useを追加
+
+use Cake\I18n\FrozenTime;
+
+
+②打刻メソッドを追加
+
+    /**
+     * 打刻
+     */
+    public function stamp() {
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $account = $this->request->getData('account');
+            $kubun = $this->request->getData('kubun');
+
+            // エンティティにpatchするための配列
+            $tmpArr = array();
+            $msg = '';
+
+            // 区分から出勤、退勤時刻を判断し日時を取得する
+            if ($kubun === 'sta') {
+                $tmpArr['start_time'] = FrozenTime::now();
+                $msg = 'おはようございます。';
+            }
+            elseif ($kubun === 'end') {
+                $tmpArr['end_time'] = FrozenTime::now();
+                $msg = 'お疲れさまでした。';
+            }
+
+            // accountからユーザーID取得
+            $this->Users = $this->fetchTable('Users');
+            $user = $this->Users->find()->where(['account' => $account])->first();
+
+            // ユーザー情報が取得できたら打刻する
+            if ($user) {
+                $tmpArr['users_id'] = $user->id;
+
+                // 保存用エンティティの生成
+                $roster = $this->Rosters->newEmptyEntity();
+                $roster = $this->Rosters->patchEntity($roster, $tmpArr);
+
+                if ($this->Rosters->save($roster)) {
+                    $this->Flash->success($msg);
+                }
+                else {
+                    $this->Flash->error('打刻でエラーが発生しました。');
+                }
+            }
+            else {
+                $this->Flash->error('入力されたアカウントが存在しません。');
+            }
+        }
+
+        $this -> render ( "stamp", "roster" );
+    }
+
+
+■勤怠システム用のLayoutファイル「templates\layout\roster.php」を作成
+
+<!DOCTYPE html>
+<html>
+<head>
+    <?= $this->Html->charset() ?>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        <?= $this->fetch('title') ?>
+    </title>
+    <?= $this->Html->meta('icon') ?>
+
+    <link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet">
+
+    <?= $this->Html->css(['normalize.min', 'milligram.min', 'cake', ]) ?>
+
+    <?= $this->fetch('meta') ?>
+    <?= $this->fetch('css') ?>
+    <?= $this->fetch('script') ?>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-title">
+            <span style="font-size: 2em;"><?= $this->fetch('title') ?></span>
+        </div>
+    </nav>
+    <main class="main">
+        <div class="container">
+            <?= $this->Flash->render() ?>
+            <?= $this->fetch('content') ?>
+        </div>
+    </main>
+    <footer>
+    </footer>
+</body>
+</html>
+
+
+■打刻用画面の「templates\Rosters\stamp.php」を作成
+
+ <div class="rosters form">
+    <center>
+        <?= $this->Flash->render() ?>
+        <?php
+            $this->start('title');
+            echo '勤怠システム';
+            $this->end();
+        ?>
+        <div style="width:500px">
+            <?= $this->Form->create() ?>
+            <?= __('アカウントIDを入力して打刻してください。') ?>
+            <?= $this->Form->control('account', ['required' => true, 'label' => '']) ?>
+            <?= $this->Form->button('出勤', ['value' => 'sta', 'name' => 'kubun']); ?>
+            <?= $this->Form->button('退勤', ['value' => 'end', 'name' => 'kubun']); ?>
+            <?= $this->Form->end() ?>
+        </div>
+    </center>
+</div>
+
+
+■URL
+http://localhost/rosters/stamp/
