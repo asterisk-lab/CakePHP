@@ -1,0 +1,141 @@
+CakePHP4 #17‗ユーザー側にもログイン機能を実装しよう！
+
+
+■c4-project/src/Controller/AppController.phpのinitializeメソッドに次のコードを追加。
+
+$this->loadComponent('Authentication.Authentication');
+
+
+
+■c4-project/src/Controller/UsersController.phpを次の内容で作成.
+
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+/**
+ * Users Controller
+ *
+ * @property \App\Model\Table\UsersTable $Users
+ * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
+ */
+class UsersController extends AppController
+{
+    /**
+     * beforeFilter method
+     */
+    public function beforeFilter(\Cake\Event\EventInterface $event)
+    {
+        parent::beforeFilter($event);
+        $this->Authentication->addUnauthenticatedActions(['login']);
+    }
+
+    /**
+     * login method
+     */
+    public function login()
+    {
+        $this->request->allowMethod(['get', 'post']);
+        $result = $this->Authentication->getResult();
+        // POST, GETを問わず、ユーザーがログインしている場合はリダイレクトします
+        if ($result->isValid()) {
+            // ログインに成功した場合、打刻画面にリダイレクトします
+            $redirect = $this->request->getQuery('redirect', [
+                'controller' => 'Rosters',
+                'action' => 'stamp',
+            ]);
+
+            return $this->redirect($redirect);
+        }
+        // ユーザーがsubmit後、認証失敗した場合は、エラーを表示します
+        if ($this->request->is('post') && !$result->isValid()) {
+            $this->Flash->error(__('Invalid username or password'));
+        }
+    }
+
+    /**
+     * logout method
+     */
+    public function logout()
+    {
+        $result = $this->Authentication->getResult();
+        // POST, GETを問わず、ユーザーがログインしている場合はリダイレクトします
+        if ($result->isValid()) {
+            $this->Authentication->logout();
+            return $this->redirect(['controller' => 'Users', 'action' => 'login']);
+        }
+    }
+}
+
+
+■レイアウトファイルのc4-project/templates/layout/roster.phpに、ログアウトリンクを追加。
+
+<div class="top-nav-links">
+　<?php if($this->request->getSession()->read('Auth')) : ?>
+  <?= $this->Html->link(__('Logout'), ['controller' => 'Users', 'action' => 'logout']) ?>
+  <?php endif; ?>
+</div>
+
+
+
+■c4-project/templates/にUsersフォルダを作成し、その中に「login.php」を作成。
+
+<!-- in /templates/Users/login.php -->
+<div class="users form">
+    <?= $this->Flash->render() ?>
+    <h3>Login</h3>
+    <?= $this->Form->create() ?>
+    <fieldset>
+        <legend><?= __('Please enter your username and password') ?></legend>
+        <?= $this->Form->control('account', ['required' => true]) ?>
+        <?= $this->Form->control('password', ['required' => true]) ?>
+    </fieldset>
+    <?= $this->Form->submit(__('Login')); ?>
+    <?= $this->Form->end() ?>
+</div>
+
+
+■c4-project/src/Controller/RostersController.phpに、
+　stamp画面は認証を除外するように「beforeFilter」メソッドを追加。
+
+    /**
+     * beforeFilter method
+     */
+    public function beforeFilter(\Cake\Event\EventInterface $event)
+    {
+        parent::beforeFilter($event);
+        $this->Authentication->addUnauthenticatedActions(['stamp']);
+    }
+
+■c4-project/templates/Rosters/stamp.phpにコードを追加。
+
+<div class="rosters form" style="text-align:center;">
+    <?php
+    $this->start('title');
+    echo '勤怠システム';
+    $this->end();
+    ?>
+    <?php
+        // 認証情報からアカウントIDを取得する。認証情報が取得できない場合はNULL。
+        $auth = $this->request->getSession()->read('Auth');
+        $account = is_null($auth) ? NULL : $auth->account;
+    ?>
+    <div style="width:500px;margin-left:auto;margin-right:auto;">
+        <?= $this->Flash->render() ?>
+        <?= $this->Form->create() ?>
+        <?= __('アカウントIDを入力して打刻してください。') ?>
+        <?= $this->Form->control('account', ['required' => true, 'label' => '', 'value' => $account]) ?>
+        <?= $this->Form->button('出勤', ['value' => 'sta', 'name' => 'kubun']); ?>
+        <?= $this->Form->button('退勤', ['value' => 'end', 'name' => 'kubun']); ?>
+        <?= $this->Form->end() ?>
+    </div>
+</div>
+
+
+■URL
+http://localhost/users/login
+http://localhost/rosters/stamp/
+
+
