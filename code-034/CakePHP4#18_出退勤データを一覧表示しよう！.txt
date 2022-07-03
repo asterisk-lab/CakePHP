@@ -1,0 +1,75 @@
+CakePHP4#18_出退勤データを一覧表示しよう！
+
+
+■RostersControllerのindexメソッドを次のように変更
+
+    /**
+     * Index method
+     *
+     * @return \Cake\Http\Response|null|void Renders view
+     */
+    public function index()
+    {
+        // 認証情報からアカウントIDを取得する。
+        $auth = $this->request->getSession()->read('Auth');
+
+        // 認証情報が取得できない場合はログイン画面にリダイレクトする。
+        if (!$auth) {
+            return $this->redirect(['controller' => 'Users', 'action' => 'logout']);
+        }
+
+        // 勤怠データ取得
+        $rosters = $this->Rosters->find()
+            ->select(['id', 'start_time', 'end_time', 'status', 'reason'])
+            ->where(['Rosters.users_id' => $auth->id])
+            ->order(['Rosters.created' => 'asc']);
+
+        $this->set(compact('rosters'));
+    }
+
+
+
+
+■c4-project/templates/Rosters/index.phpを変更
+
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Roster[]|\Cake\Collection\CollectionInterface $rosters
+ */
+?>
+<div class="rosters index content">
+    <h3><?= __('勤務表') ?></h3>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th><?= __('start_time') ?></th>
+                    <th><?= __('end_time') ?></th>
+                    <th><?= __('status') ?></th>
+                    <th><?= __('reason') ?></th>
+                    <th class="actions"><?= __('Actions') ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($rosters as $roster): ?>
+                <tr>
+                    <td><?= h($roster->start_time) ?></td>
+                    <td><?= h($roster->end_time) ?></td>
+                    <td><?= $this->Number->format($roster->status) ?></td>
+                    <td><?= h($roster->reason) ?></td>
+                    <td class="actions">
+                        <?= $this->Html->link(__('Edit'), ['action' => 'edit', $roster->id]) ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+■URL
+http://localhost/rosters/
+
+
