@@ -1,0 +1,170 @@
+CakePHP4#19_出退勤データの一覧表を１ヶ月単位で表示しよう！
+
+
+■/src/Controller/RostersController.phpを変更（バグの修正）
+            // 取得したデータを１ヶ月分の配列にセットする
+            $rosters = array_fill(1, (int)((new FrozenTime())->modify('last day of ' . $condition['year'] . '-' . $condition['month'])->i18nFormat('dd')), null);
+            foreach ($tmpRosters as $roster) {
+                $rosters[$roster->day] = $roster;
+　　　　　　　　　　↓↓↓↓↓下のコードに変える。
+                $rosters[intval($roster->day)] = $roster;
+            }
+
+
+
+■/templates/Rosters/index.phpを変更（Editリンクの復活）
+
+<?php
+
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Roster[]|\Cake\Collection\CollectionInterface $rosters
+ */
+
+use Cake\I18n\FrozenTime;
+
+$month = range(0, 12);
+unset($month[0]);
+
+if (empty($condition)) {
+    $default_year = (new FrozenTime())->i18nFormat('YYYY');
+    $default_day = (new FrozenTime())->i18nFormat('M');
+} else {
+    $default_year = $condition['year'];
+    $default_day = $condition['month'];
+}
+?>
+<div class="rosters index content">
+    <h3><?= __('勤務表') ?></h3>
+    <?= $this->Form->create() ?>
+    <div style="float: left; padding-right: 10px;">
+        <?= $this->Form->select('year', $years, ['value' => $default_year]) ?>
+    </div>
+    <div style="float: left; padding: 7px 10px 5px 0px;">年</div>
+    <div style="float: left; padding-right: 10px;">
+        <?= $this->Form->select('month', $month, ['value' => $default_day]) ?>
+    </div>
+    <div style="float: left; padding: 7px 10px 5px 0px;">月</div>
+    <div style="float: left">
+        <?= $this->Form->button(__('search')) ?>
+    </div>
+    <?= $this->Form->end() ?>
+    <div class="table-responsive">
+        <?php if (isset($rosters)) : ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th><?= __('day') ?></th>
+                        <th><?= __('start_time') ?></th>
+                        <th><?= __('end_time') ?></th>
+                        <th><?= __('status') ?></th>
+                        <th><?= __('reason') ?></th>
+                        <th class="actions"><?= __('Actions') ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($rosters as $key => $roster) : ?>
+                        <?php $date = new FrozenTime($condition['year'] . '-' . $condition['month'] . '-' . $key) ?>
+                        <tr>
+                            <td><?= h($date->i18nFormat('d日（E）')) ?></td>
+                            <td><?= empty($roster->start_time) ? '' : h($roster->start_time->i18nFormat('HH:mm')) ?></td>
+                            <td><?= empty($roster->end_time) ? '' : h($roster->end_time->i18nFormat('HH:mm')) ?></td>
+                            <td><?= empty($roster->status) ? '' : $this->Number->format($roster->status) ?></td>
+                            <td><?= empty($roster->reason) ? '' : h($roster->reason) ?></td>
+                            <td class="actions">
+                                <?= $this->Html->link(__('Edit'), ['action' => 'edit', empty($roster) ? '' : $roster->id, '?' => ['date' => $date->i18nFormat('yyyy-MM-dd 00:00')]]) ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+</div>
+
+■/templates/Rosters/edit.phpを変更（Edit画面の修正）
+
+<?php
+/**
+ * @var \App\View\AppView $this
+ * @var \App\Model\Entity\Roster $roster
+ * @var string[]|\Cake\Collection\CollectionInterface $users
+ */
+?>
+<div class="row">
+    <aside class="column">
+        <div class="side-nav">
+            <h4 class="heading"><?= __('Actions') ?></h4>
+            <?= $this->Form->postLink(
+                __('Delete'),
+                ['action' => 'delete', $roster->id],
+                ['confirm' => __('Are you sure you want to delete # {0}?', $roster->id), 'class' => 'side-nav-item']
+            ) ?>
+            <?= $this->Html->link(__('List Rosters'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
+        </div>
+    </aside>
+    <div class="column-responsive column-80">
+        <div class="rosters form content">
+            <?= $this->Form->create($roster) ?>
+            <fieldset>
+                <legend><?= __('Edit Roster') ?></legend>
+                <?php
+                    echo $this->Form->control('users_id', ['disabled' => true]);
+                    echo $this->Form->control('start_time', ['empty' => true]);
+                    echo $this->Form->control('end_time', ['empty' => true]);
+                    echo $this->Form->control('status');
+                    echo $this->Form->control('reason');
+                    // echo $this->Form->control('deleted', ['empty' => true]);
+                    // echo $this->Form->control('created_user');
+                    // echo $this->Form->control('modified_user');
+                ?>
+            </fieldset>
+            <?= $this->Form->button(__('Submit')) ?>
+            <?= $this->Form->end() ?>
+        </div>
+    </div>
+</div>
+
+■/src/Controller/RostersController.phpを変更（editメソッドの修正）
+
+    /**
+     * Edit method
+     *
+     * @param string|null $id Roster id.
+     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
+     */
+    public function edit($id = null)
+    {
+        $user = $this->Authentication->getIdentity();
+        $roster = null;
+
+        if (empty($id)) {
+            $roster = $this->Rosters->newEmptyEntity();
+            $roster->users_id = $user->id;
+            $roster->start_time = new FrozenTime($this->request->getQuery('date'));
+            $roster->end_time = new FrozenTime($this->request->getQuery('date'));
+        } else {
+            $roster = $this->Rosters->get($id, [
+                'contain' => [],
+            ]);
+        }
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $roster = $this->Rosters->patchEntity($roster, $this->request->getData());
+            if ($this->Rosters->save($roster)) {
+                $this->Flash->success(__('The roster has been saved.'));
+
+                return $this->redirect(['action' => 'index']);
+            }
+            $this->Flash->error(__('The roster could not be saved. Please, try again.'));
+        }
+        $users = $this->Rosters->Users->find('list', ['limit' => 200])->all();
+        $this->set(compact('roster', 'users'));
+    }
+
+
+■URL
+http://localhost/rosters/
+
+
