@@ -1,0 +1,129 @@
+CakePHP4#23_編集機能の動作改善をしよう！
+
+
+■/templates/Rosters/index.phpを変更
+
+    <?= $this->Form->create() ?>
+
+　　　　　　↓↓↓↓↓
+
+    <?= $this->Form->create($rosters, ['type' => 'get']) ?>
+
+
+※今回からデータを表示しないケースがなくなったため、$conditionのif文を削除する。
+if (empty($condition)) {
+    $default_year = (new FrozenTime())->i18nFormat('YYYY');
+    $default_day = (new FrozenTime())->i18nFormat('M');
+} else {
+    $default_year = $condition['year'];
+    $default_day = $condition['month'];
+}
+
+　　　　　　↓↓↓↓↓
+
+$default_year = $condition['year'];
+$default_day = $condition['month'];
+
+
+
+
+■/src/Controller/RostersController.phpを変更
+
+    /**
+     * Index method
+     *
+     * @return \Cake\Http\Response|null|void Renders view
+     */
+    public function index()
+    {
+        // 認証情報からアカウントIDを取得する。
+        $auth = $this->request->getSession()->read('Auth');
+
+        // 認証情報が取得できない場合はログイン画面にリダイレクトする
+        if (!$auth) {
+            return $this->redirect(['controller' => 'Users', 'action' => 'logout']);
+        }
+
+        // 検索条件で使用する年を、データとして存在する年から取得する
+        $years = $this->Rosters->find('list', ['keyField' => 'year', 'valueField' => 'year'])
+            ->select(['year' => 'DATE_FORMAT(start_time, \'%Y\')'])
+            ->group(['year']);
+
+        $condition = $this->request->getQuery();
+
+        if (empty($condition)) {
+            $date = new FrozenTime();
+            $year = intval($date->i18nFormat('yyyy'));
+            $month = intval($date->i18nFormat('MM'));
+            $condition = ['year' => $year, 'month' => $month];
+        }
+
+        // データ抽出期間を検索条件から生成
+        $start = new FrozenTime($condition['year'] . '-' . $condition['month'] . '-01' . ' 00:00:00');
+        $end = $start->addMonth(1);
+
+        // 勤怠データ取得
+        $tmpRosters = $this->Rosters->find()
+            ->select(['id', 'day' => 'DATE_FORMAT(start_time, \'%d\')', 'start_time', 'end_time', 'status', 'reason'])
+            ->where(['users_id' => $auth->id])
+            ->where(['start_time >=' => $start])
+            ->where(['start_time <' => $end])
+            ->order(['start_time' => 'asc']);
+
+        // 取得したデータを１ヶ月分の配列にセットする
+        $rosters = array_fill(1, (int)((new FrozenTime())->modify('last day of ' . $condition['year'] . '-' . $condition['month'])->i18nFormat('dd')), null);
+        foreach ($tmpRosters as $roster) {
+            $rosters[intval($roster->day)] = $roster;
+        }
+
+        $this->set(compact('rosters', 'years', 'condition'));
+    }
+
+
+
+    /**
+     * Edit method
+     *
+     * @param string|null $id Roster id.
+     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
+     */
+    public function edit($id = null)
+    {
+        $user = $this->Authentication->getIdentity();
+        $roster = null;
+
+        $date = new FrozenTime($this->request->getQuery('date'));
+        $year = intval($date->i18nFormat('yyyy'));
+        $month = intval($date->i18nFormat('MM'));
+
+        if (empty($id)) {
+            $roster = $this->Rosters->newEmptyEntity();
+            $roster->users_id = $user->id;
+            $roster->start_time = $date;
+            $roster->end_time = $date;
+        } else {
+            $roster = $this->Rosters->get($id, [
+                'contain' => [],
+            ]);
+        }
+
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $roster = $this->Rosters->patchEntity($roster, $this->request->getData());
+            if ($this->Rosters->save($roster)) {
+                $this->Flash->success(__('The roster has been saved.'));
+
+                return $this->redirect(['action' => 'index?year=' . $year . '&month=' . $month]);
+            }
+            $this->Flash->error(__('The roster could not be saved. Please, try again.'));
+        }
+        $users = $this->Rosters->Users->find('list', ['limit' => 200])->all();
+        $this->set(compact('roster', 'users'));
+    }
+
+
+
+■URL
+http://localhost/rosters/
+
+
